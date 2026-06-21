@@ -119,8 +119,8 @@
                 // Fetch Solar data (Assuming: Element MassFraction)
                 const resSolar = await fetch('solar_abundance.dat');
                 const txtSolar = await resSolar.text();
-                const solarLines = txtSolar.trim().split('\n').map(line => line.trim()).filter(line => line.length > 0);
-                solarData = solarLines.map(line => parseFloat(line.split(/\s+/)[1]));
+                const solarParsed = parseDatFile(txtSolar);
+                solarData = solarParsed;
 
                 // Enable buttons after load
                 document.getElementById('massiveSelect').options[0].text = "Select Model...";
