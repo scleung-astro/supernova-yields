@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Chemical Abundance Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f8f9fa; padding-bottom: 50px; }
+        .header-space { background-color: #343a40; color: white; padding: 2rem 0; margin-bottom: 2rem; }
+        .graph-container { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .control-panel { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        canvas { max-height: 500px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-space text-center">
+        <h1>[Placeholder] Chemical Abundance Yield Combiner</h1>
+    </div>
+
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-secondary">
+                    <strong>Instructions:</strong> [Placeholder] Select a Massive Star model and a Type Ia Supernova model from the dropdown menus. Enter the relative mass ratio for the Type Ia contribution, then click "Plot" to compute and visualize the combined [X/Fe] abundance pattern against atomic numbers.
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8 mb-4">
+                <div class="graph-container">
+                    <canvas id="abundanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="control-panel">
+                    <h5 class="mb-3">Model Parameters</h5>
+                    
+                    <div class="mb-3">
+                        <label for="massiveSelect" class="form-label">Massive Star Model</label>
+                        <select id="massiveSelect" class="form-select">
+                            <option value="">Loading data...</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="typeIaSelect" class="form-label">Type Ia Model</label>
+                        <select id="typeIaSelect" class="form-select">
+                            <option value="">Loading data...</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="ratioInput" class="form-label">Relative Ratio (Type Ia)</label>
+                        <input type="number" id="ratioInput" class="form-control" value="0.1" step="0.01" min="0">
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button id="plotBtn" class="btn btn-primary">Plot Data</button>
+                        <button id="clearBtn" class="btn btn-outline-danger">Clear Graph</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Structures
+        const elementsList = [
+            "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", 
+            "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", 
+            "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn"
+        ];
+        
+        let massiveData = {};
+        let typeIaData = {};
+        let solarData = []; // Array of mass fractions matching elementsList
+        
+        let chartInstance = null;
+
+        // Utility: Parse tabular string data into an object of arrays
+        function parseDatFile(text) {
+            const lines = text.trim().split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            const headers = lines[0].split(/\s+/).slice(1); // Exclude the 'Element' header
+            const parsed = {};
+            headers.forEach(h => parsed[h] = []);
+
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(",");
+                // Assume rows match the 30 elements in order.
+                for (let j = 0; j < headers.length; j++) {
+                    parsed[headers[j]].push(parseFloat(cols[j + 1]));
+                }
+            }
+            return { headers, parsed };
+        }
+
+        // Initialize Data on Page Load
+        async function loadData() {
+            try {
+                // Fetch massive star yields
+                const resMassive = await fetch('massive_star_yields.dat');
+                const txtMassive = await resMassive.text();
+                const massiveParsed = parseDatFile(txtMassive);
+                massiveData = massiveParsed.parsed;
+                populateDropdown('massiveSelect', massiveParsed.headers);
+
+                // Fetch Type Ia yields
+                const resIa = await fetch('type_ia_yields.dat');
+                const txtIa = await resIa.text();
+                const iaParsed = parseDatFile(txtIa);
+                typeIaData = iaParsed.parsed;
+                populateDropdown('typeIaSelect', iaParsed.headers);
+
+                // Fetch Solar data (Assuming: Element MassFraction)
+                const resSolar = await fetch('solar_abundance.dat');
+                const txtSolar = await resSolar.text();
+                const solarLines = txtSolar.trim().split('\n').map(line => line.trim()).filter(line => line.length > 0);
+                solarData = solarLines.map(line => parseFloat(line.split(/\s+/)[1]));
+
+                // Enable buttons after load
+                document.getElementById('massiveSelect').options[0].text = "Select Model...";
+                document.getElementById('typeIaSelect').options[0].text = "Select Model...";
+
+            } catch (error) {
+                console.error("Error loading data:", error);
+                alert("Failed to load data files. Ensure massive_star_yields.dat, type_ia_yields.dat, and solar_abundance.dat are in the same directory and you are running via a local/remote web server.");
+            }
+        }
+
+        function populateDropdown(id, options) {
+            const select = document.getElementById(id);
+            select.innerHTML = '<option value="">Select Model...</option>';
+            options.forEach(opt => {
+                const optionNode = document.createElement('option');
+                optionNode.value = opt;
+                optionNode.textContent = opt;
+                select.appendChild(optionNode);
+            });
+        }
+
+        // Chart Initialization
+        function initChart() {
+            const ctx = document.getElementById('abundanceChart').getContext('2d');
+            
+            // X-Axis labels: Atomic numbers 1 to 30
+            const xLabels = Array.from({length: 30}, (_, i) => i + 1);
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: xLabels,
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Atomic Number (Z)' },
+                            min: 4,  // Index 4 is atomic number 5 (Boron)
+                            max: 29  // Index 29 is atomic number 30 (Zinc)
+                        },
+                        y: {
+                            title: { display: true, text: '[X/Fe]' },
+                            min: -1,
+                            max: 1
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => {
+                                    return `Element: ${elementsList[items[0].dataIndex]} (Z=${items[0].label})`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Main Computation & Plotting Logic
+        document.getElementById('plotBtn').addEventListener('click', () => {
+            const massiveKey = document.getElementById('massiveSelect').value;
+            const iaKey = document.getElementById('typeIaSelect').value;
+            const ratio = parseFloat(document.getElementById('ratioInput').value);
+
+            if (!massiveKey || !iaKey) {
+                alert("Please select both a Massive Star model and a Type Ia model.");
+                return;
+            }
+
+            if (isNaN(ratio) || ratio < 0) {
+                alert("Please enter a valid relative ratio.");
+                return;
+            }
+
+            const mMassive = massiveData[massiveKey];
+            const mIa = typeIaData[iaKey];
+
+            // 1. Calculate Combined Masses
+            let combinedMasses = [];
+            let totalMass = 0;
+            for (let i = 0; i < 30; i++) {
+                const mComb = mMassive[i] + (mIa[i] * ratio);
+                combinedMasses.push(mComb);
+                totalMass += mComb;
+            }
+
+            // 2. Mass Fractions
+            let massFractions = combinedMasses.map(m => m / totalMass);
+
+            // 3. Iron indices (Fe is 26th element, index 25)
+            const feIndex = 25; 
+            const feFractionComb = massFractions[feIndex];
+            const feFractionSolar = solarData[feIndex];
+
+            if (feFractionComb <= 0 || feFractionSolar <= 0) {
+                alert("Iron fraction is zero or missing, cannot compute [X/Fe].");
+                return;
+            }
+
+            // 4. Compute [X/Fe]
+            let plotData = [];
+            for (let i = 0; i < 30; i++) {
+                const ratioComb = massFractions[i] / feFractionComb;
+                const ratioSolar = solarData[i] / feFractionSolar;
+
+                if (ratioComb > 0 && ratioSolar > 0) {
+                    const logRatio = Math.log10(ratioComb / ratioSolar);
+                    plotData.push(logRatio);
+                } else {
+                    plotData.push(null); // Leave gap if log(0)
+                }
+            }
+
+            // Generate random color for distinguishing multiple lines
+            const color = `hsl(${Math.random() * 360}, 70%, 50%)`;
+
+            // Add dataset to chart
+            chartInstance.data.datasets.push({
+                label: `${massiveKey} + ${iaKey} (Ratio: ${ratio})`,
+                data: plotData,
+                borderColor: color,
+                backgroundColor: color,
+                tension: 0.1,
+                pointRadius: 3
+            });
+            
+            chartInstance.update();
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            chartInstance.data.datasets = [];
+            chartInstance.update();
+        });
+
+        // Setup on load
+        window.onload = () => {
+            initChart();
+            loadData();
+        };
+    </script>
+</body>
+</html>
