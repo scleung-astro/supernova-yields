@@ -192,10 +192,17 @@
                     responsive: true,
                     scales: {
                         x: {
-                            title: { display: true, text: 'Atomic Number (Z)' },
-                            min: 4,  // Index 4 is atomic number 5 (Boron)
-                            max: 29  // Index 29 is atomic number 30 (Zinc)
-                        },
+                            type: 'linear', // Keeps it a true mathematical number line
+                            min: 5,         // Boron
+                            max: 30,        // Zinc
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                // 'value' is the atomic number (e.g., 6)
+                                // elementsList[6 - 1] returns "C"
+                                return elementsList[value - 1] || value;
+                                }
+                            }
                         y: {
                             title: { display: true, text: '[X/Fe]' },
                             min: -1,
