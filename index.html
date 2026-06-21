@@ -24,7 +24,7 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="alert alert-secondary">
-                    <strong>Instructions:</strong> [Placeholder] Select a Massive Star model and a Type Ia Supernova model from the dropdown menus. Enter the relative mass ratio for the Type Ia contribution, then click "Plot" to compute and visualize the combined [X/Fe] abundance pattern against atomic numbers.
+                    <strong>Instructions:</strong> Select a Massive Star model and a Type Ia Supernova model from the dropdown menus. Enter the relative mass ratio (> 0) for the Type Ia contribution, then click "Plot" to compute and visualize the combined [X/Fe] abundance pattern against atomic numbers. Click "Clear" to erase the figure.
                 </div>
             </div>
         </div>
@@ -63,6 +63,30 @@
                         <button id="plotBtn" class="btn btn-primary">Plot Data</button>
                         <button id="clearBtn" class="btn btn-outline-danger">Clear Graph</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="p-4 bg-white rounded-3 shadow-sm mb-4">
+                    <h5 class="border-bottom pb-2 mb-3">References & Acknowledgements</h5>
+                    
+                    <ul class="list-unstyled mb-4">
+                        <li class="mb-2">
+                            <strong>Massive star models</strong>: Shing-Chi Leung et al., ApJ <strong>1001</strong>, 72 (2026). 
+                            (<a href="https://ui.adsabs.harvard.edu/abs/2026ApJ..1001...72L/abstract" target="_blank" rel="noopener noreferrer" class="text-decoration-none">NASA ADS</a>)
+                        </li>
+                        <li class="mb-2">
+                            <strong>Ch. Mass Type Ia models</strong>: Shing-Chi Leung et al., ApJ <strong>861</strong>, 143 (2018). 
+                            (<a href="https://ui.adsabs.harvard.edu/abs/2018ApJ...861..143L/abstract" target="_blank" rel="noopener noreferrer" class="text-decoration-none">NASA ADS</a>)
+                        </li>
+                    </ul>
+
+                    <h6 class="text-secondary small uppercase fw-bold mb-2">Acknowledgements</h6>
+                    <p class="text-muted mb-0" style="font-size: 0.95rem;">
+                        The webpage is built under the support of the National Science Foundation under grant AST-2316807.
+                    </p>
                 </div>
             </div>
         </div>
