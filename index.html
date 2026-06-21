@@ -85,7 +85,7 @@
         // Utility: Parse tabular string data into an object of arrays
         function parseDatFile(text) {
             const lines = text.trim().split('\n').map(line => line.trim()).filter(line => line.length > 0);
-            const headers = lines[0].split(/\s+/).slice(1); // Exclude the 'Element' header
+            const headers = lines[0].split(",").slice(1); // Exclude the 'Element' header
             const parsed = {};
             headers.forEach(h => parsed[h] = []);
 
