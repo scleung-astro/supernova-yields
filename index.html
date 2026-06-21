@@ -120,7 +120,7 @@
                 const resSolar = await fetch('solar_abundance.dat');
                 const txtSolar = await resSolar.text();
                 const solarParsed = parseDatFile(txtSolar);
-                solarData = solarParsed;
+                solarData = solarParsed.parsed;
 
                 // Enable buttons after load
                 document.getElementById('massiveSelect').options[0].text = "Select Model...";
