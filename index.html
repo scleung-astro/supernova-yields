@@ -217,7 +217,7 @@
             // 3. Iron indices (Fe is 26th element, index 25)
             const feIndex = 25; 
             const feFractionComb = massFractions[feIndex];
-            const feFractionSolar = solarData[feIndex];
+            const feFractionSolar = solarData['Sun'][feIndex];
 
             if (feFractionComb <= 0 || feFractionSolar <= 0) {
                 alert("Iron fraction is zero or missing, cannot compute [X/Fe].");
@@ -228,7 +228,7 @@
             let plotData = [];
             for (let i = 0; i < 30; i++) {
                 const ratioComb = massFractions[i] / feFractionComb;
-                const ratioSolar = solarData[i] / feFractionSolar;
+                const ratioSolar = solarData['Sun'][i] / feFractionSolar;
 
                 if (ratioComb > 0 && ratioSolar > 0) {
                     const logRatio = Math.log10(ratioComb / ratioSolar);
